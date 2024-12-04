@@ -1,0 +1,138 @@
+syntax = "proto3";
+
+package vortex_db;
+
+option go_package = "gRPC/proto;proto";
+
+message Metadata {
+  map<string, string> tags = 1;
+  int64 timestamp = 2;
+}
+
+message NestedValue {
+  map<string, NestedValue> map_value = 1;
+  repeated NestedValue list_value = 2;
+  string string_value = 3;
+  int64 int_value = 4;
+  double float_value = 5;
+  bytes binary_value = 6;
+}
+
+message SetRequest {
+  string namespace = 1;
+  string key = 2;
+  oneof value {
+    string string_value = 3;
+    int64 int_value = 4;
+    double float_value = 5;
+    bytes binary_value = 6;
+    NestedValue nested_value = 7;
+  }
+  Metadata metadata = 8;
+  bool compressed = 9;
+  int64 ttl = 10; 
+}
+
+message SetResponse {
+  bool success = 1;
+  string error_message = 2; 
+}
+
+
+message GetRequest {
+  string namespace = 1;
+  string key = 2;
+}
+
+message GetResponse {
+  oneof value {
+    string string_value = 1;
+    int64 int_value = 2;
+    double float_value = 3;
+    bytes binary_value = 4;
+    NestedValue nested_value = 5;
+  }
+  bool compressed = 6;
+  Metadata metadata = 7;
+  string error_message = 8;
+}
+
+
+message BulkSetRequest {
+  repeated SetRequest requests = 1;
+}
+
+message BulkSetResponse {
+  repeated SetResponse responses = 1;
+}
+
+message BulkGetRequest {
+  repeated GetRequest requests = 1;
+}
+
+message BulkGetResponse {
+  repeated GetResponse responses = 1;
+}
+
+
+message QueryRequest {
+  string namespace = 1;
+  map<string, string> filters = 2;
+  repeated string keys = 3;
+  int32 limit = 4; 
+  int32 offset = 5; 
+  string sort_by = 6; 
+  bool ascending = 7; 
+}
+
+message QueryResponse {
+  repeated KeyValuePair results = 1;
+}
+
+message KeyValuePair {
+  string key = 1;
+  oneof value {
+    string string_value = 2;
+    int64 int_value = 3;
+    double float_value = 4;
+    bytes binary_value = 5;
+    NestedValue nested_value = 6;
+  }
+  Metadata metadata = 7;
+}
+
+message TransactionRequest {
+  repeated SetRequest sets = 1;
+  repeated GetRequest gets = 2;
+}
+
+message TransactionResponse {
+  repeated SetResponse set_responses = 1;
+  repeated GetResponse get_responses = 2;
+  bool success = 3;
+}
+
+message Error {
+  string code = 1;
+  string message = 2;
+}
+
+message SyncRequest {
+  string namespace = 1;
+  repeated KeyValuePair data = 2;
+}
+
+message SyncResponse {
+  bool success = 1;
+  string error_message = 2;
+}
+
+service StorageService {
+  rpc Set(SetRequest) returns (SetResponse);
+  rpc Get(GetRequest) returns (GetResponse);
+  rpc BulkSet(BulkSetRequest) returns (BulkSetResponse);
+  rpc BulkGet(BulkGetRequest) returns (BulkGetResponse);
+  rpc Query(QueryRequest) returns (QueryResponse);
+  rpc Transaction(TransactionRequest) returns (TransactionResponse);
+  rpc Sync(SyncRequest) returns (SyncResponse);
+}
